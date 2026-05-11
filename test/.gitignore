@@ -1,0 +1,34 @@
+# Node & Packages
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Titan Engine (Auto-generated - DO NOT COMMIT)
+dist/
+.titan/
+.ext/
+.env
+build/
+
+# Rust Build Artifacts (If using Hybrid)
+server/target/
+Cargo.lock
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# Environment & Secrets
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

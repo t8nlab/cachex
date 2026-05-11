@@ -1,0 +1,32 @@
+{
+  "name": "@t8n/cachex",
+  "version": "1.0.0",
+  "description": "A High-Performance, Redis-like In-Memory Data Engine for TitanPL.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "titan.json",
+    "utils/",
+    "README.md"
+  ],
+  "keywords": [
+    "titanpl",
+    "titan",
+    "extension"
+  ],
+  "scripts": {
+    "test": "cd test && titan dev"
+  },
+  "dependencies": {
+    "@titanpl/core": "^4.0.0",
+    "@titanpl/native": "^7.0.7",
+    "@titanpl/node": "latest",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6"
+  }
+}

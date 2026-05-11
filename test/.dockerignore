@@ -1,0 +1,37 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+
+package-lock.json
+yarn.lock
+
+# Titan Gravity Engine
+dist/
+.titan/
+.ext/
+build/
+node_modules/
+
+deploy/
+
+# Rust Build Artifacts
+server/target/
+Cargo.lock
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

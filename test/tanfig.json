@@ -1,0 +1,20 @@
+{
+  "name": "test",
+  "description": "A powerful TitanPL project",
+  "version": "1.0.0",
+  "extensions": {
+    "allowWasm": true,
+    "allowNative": [
+      "@titanpl/core"
+    ]
+  },
+  "build": {
+    "purpose": "test",
+    "files": [
+      "public",
+      "static",
+      "db",
+      "tanfig.json"
+    ]
+  }
+}

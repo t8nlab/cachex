@@ -1,0 +1,18 @@
+# NPM Ignore file
+# (Only needed if you don't use 'files' in package.json, 
+# but it's good practice for local testing)
+
+test-app/
+example-server/
+.env
+.github/
+.vscode/
+.gitignore
+README.md
+CHANGELOG.md
+test/
+
+# Build artifacts (if any)
+dist/
+node_modules/
+.ext
