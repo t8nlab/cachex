@@ -30,14 +30,23 @@ npm i @t8n/cachex
 
 ---
 
-## 💾 Persistent Storage (Lazy Loading)
+## 💾 Persistent Storage (Snapshots & Lazy Loading)
 
-CacheX now features "Zero-Config Persistence". By default, every `set` operation is mirrored to the `.titan/.cache` folder.
+To prevent your disk from bottlenecking your ultra-fast RAM cache, CacheX does **NOT** save to disk on every single request. Instead, it uses a Snapshot system similar to Redis RDB!
 
-- **Lazy Loading**: When you request a key via `get()`, if the server was restarted and the key is missing from memory, CacheX **automatically reads the disk directly** and restores it to memory on the fly!
-- **Consistency**: Disk and memory are kept in sync in real-time.
+- **Lazy Loading**: When the server restarts, if you request a key via `get()`, CacheX **automatically reads the disk directly** and restores it to memory on the fly!
+- **Snapshots (`rebase`)**: To persist your current memory state to disk, simply call `cachex.rebase()`. You can orchestrate this using a Titan Cron job every 5 minutes.
 
-To disable persistence (memory-only mode):
+```javascript
+// Example: Run this periodically in a background cron job!
+import cachex from "@t8n/cachex";
+export default function backupCache() {
+    const saved = cachex.rebase();
+    return { message: `Backed up ${saved} keys to disk!` };
+}
+```
+
+To entirely disable disk interactions:
 ```javascript
 import { CacheX } from "@t8n/cachex";
 const volatileCache = new CacheX({ persist: false });

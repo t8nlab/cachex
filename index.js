@@ -91,9 +91,9 @@ export class CacheX {
     if (!entry && this.config.persist) {
       const filename = this._toHex(fullKey);
       const filePath = `../.titan/.cache/${filename}.json`;
-      if (drift(fs.exists(filePath))) {
+      if (fs.exists(filePath)) {
         try {
-          const content = drift(fs.readFile(filePath));
+          const content = fs.readFile(filePath);
           entry = JSON.parse(content);
           shareContext.set(storeKey, entry);
           this._updateEviction(fullKey);
@@ -168,31 +168,24 @@ export class CacheX {
     shareContext.set(storeKey, entry);
     this._updateEviction(fullKey);
 
-    if (this.config.persist) {
-      this._writeDisk(fullKey, entry);
-    }
-
     return true;
   }
 
   _writeDisk(fullKey, entry) {
     const filename = this._toHex(fullKey);
-    drift(fs.writeFile(`../.titan/.cache/${filename}.json`, JSON.stringify(entry)));
+    fs.writeFile(`../.titan/.cache/${filename}.json`, JSON.stringify(entry)).catch(() => {});
   }
 
   _removeDisk(fullKey) {
     const filename = this._toHex(fullKey);
     const path = `../.titan/.cache/${filename}.json`;
-    if (drift(fs.exists(path))) {
-      drift(fs.remove(path));
-    }
+    fs.remove(path).catch(() => {});
   }
 
   _deleteInternal(fullKey) {
     const storeKey = `${this._storePrefix}${fullKey}`;
     shareContext.delete(storeKey);
     this._removeFromEviction(fullKey);
-    if (this.config.persist) this._removeDisk(fullKey);
     return true;
   }
 
