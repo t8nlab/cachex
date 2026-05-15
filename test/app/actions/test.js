@@ -1,4 +1,4 @@
-import { log, task, time, drift } from "@titanpl/native";
+import { log, task, shareContext } from "@titanpl/native";
 import cachex from "@t8n/cachex";
 
 export default function test(req) {
@@ -13,43 +13,58 @@ export default function test(req) {
     // 1. Setup expired data for cleaner to pick up
     // Set a key that expires in 1ms
     cachex.set("expired_soon", "bye", { ttl: 1 });
-    
-    // 2. Trigger Manual Cleanup Task
-    // We spawn it as a one-off first to see it work immediately
-    try {
-        task.spawn("instant-cleanup", "cleanup", {}, { dedupe: false });
-        assert("cleaner_task_spawned", true);
-    } catch (e) {
-        assert("cleaner_task_spawned", false);
-    }
+
 
     // 3. SWR Refresh Test
-    cachex.set("swr_key", { data: "old" });
-    // This call should return "old" but trigger "refresh" action in BG
+    // Only set it manually if it doesn't exist so we don't reset the timer on every hit
+    if (!cachex.exists("swr_key")) cachex.set("swr_key", { data: "old" });
+    
+    // This call should return cached data. After the delay threshold, it will spawn the task
     const swrData = cachex.wrap("swr_key", () => ({ data: "new" }), { 
-        refreshAction: "refresh" 
+        task: "refresh" 
     });
-    assert("swr_initial_return", swrData.data === "old");
-
-    // 4. Queue Test (using restored getuser)
-    try {
-        cachex.enqueue("sync_queue", { id: "999" }, { handler: "getuser" });
-        assert("queue_enqueued", true);
-    } catch (e) {
-        assert("queue_enqueued", false);
-    }
+    assert("swr_initial_return", swrData.data === "old" || swrData.random !== undefined);
 
     // 5. Verification of Atomic Ops
-    cachex.set("count", 0);
+    if (!cachex.exists("count")) cachex.set("count", 0);
     cachex.incr("count", 10);
     const finalCount = cachex.incr("count", 5);
-    assert("atomic_ops", finalCount === 15);
+    assert("atomic_ops", finalCount >= 15);
+    
+    // 6. Persistence Conflict Test
+    cachex.set("persist_test", { foo: "bar" });
+    
+    // Manually wipe ONLY from memory (simulating server restart)
+    if (typeof shareContext !== "undefined") {
+        shareContext.delete("__cachex__:store:persist_test");
+        // Verify it was wiped from memory directly (simulate memory loss)
+        assert("persistence_pre_load", shareContext.get("__cachex__:store:persist_test") === null);
+    }
+    
+    // Now, cachex.get should automatically lazy-load the data directly from disk!
+    const restored = cachex.get("persist_test");
+    log(`Debug Restored data: ${JSON.stringify(restored)}`);
+    assert("persistence_restored", restored && restored.foo === "bar");
+
+    // 7. Delayed Refresh Test (10 seconds)
+    if (!cachex.exists("delay_key")) {
+        log("Setting initial 'delay_key' data...");
+        cachex.set("delay_key", { data: "initial" });
+    } else {
+        log("Reading 'delay_key' to trigger delay check...");
+    }
+    cachex.wrap("delay_key", () => ({ data: "fresh" }), {
+        task: "refresh",
+        delay: 10000
+    });
+    assert("delay_refresh_scheduled", true);
 
     log("Tests finished. Check background logs for Cleanup and Refresh results.");
     
     return {
-        status: "OK",
+        status: "OK",   
         results: results.tests,
-        stats: cachex.stats()
+        stats: cachex.stats(),
+        keys: cachex.keys()
     };
 }

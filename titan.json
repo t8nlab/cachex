@@ -1,6 +1,5 @@
 {
   "name": "@t8n/cachex",
-  "version": "1.0.0",
   "main": "index.js",
   "description": "A High-Performance, Redis-like In-Memory Data Engine for TitanPL.",
   "type": "js"

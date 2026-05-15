@@ -2,7 +2,7 @@
  * TitanPL Extension — @t8n/cachex
  * 
  * A high-performance, Redis-like in-memory data engine built exclusively for TitanPL.
- * Leverages t.shareContext for cross-isolate state and t.task for background orchestration.
+ * Leverages native shareContext for cross-isolate state and task for background orchestration.
  * 
  * @package @t8n/cachex
  */
@@ -39,6 +39,14 @@ declare module "@t8n/cachex" {
      * @default 1048576 (1MB)
      */
     maxObjectSize?: number;
+
+    /**
+     * Whether to enable disk persistence to .titan/.cache.
+     * When true, data is mirrored to disk and automatically Lazy-Loaded into memory
+     * if requested via `get()` after a server restart.
+     * @default true
+     */
+    persist?: boolean;
   }
 
   /**
@@ -62,6 +70,47 @@ declare module "@t8n/cachex" {
      * Equivalent to Redis SET XX.
      */
     xx?: boolean;
+
+    /**
+     * Optional background task name (Titan Action) to spawn when the data is accessed 
+     * and its age exceeds the `delay` threshold (SWR Pattern).
+     */
+    task?: string;
+
+    /**
+     * Alias for `task`. Specified the Titan Action to run for background refresh.
+     */
+    refreshAction?: string;
+
+    /**
+     * Stale-While-Revalidate (SWR) Delay threshold in milliseconds.
+     * When the cache is requested via `get()` or `wrap()`, if the data is older than this delay,
+     * it instantly returns the cached data AND spawns the background `task`.
+     * If not provided, defaults to `ttl` (for periodic refresh) or 60000 (1 minute).
+     */
+    delay?: number;
+
+    /**
+     * Alias for `delay`.
+     */
+    refreshDelay?: number;
+
+    /**
+     * Optional metadata to include in the background task payload.
+     * Accessible via `req.body` in the spawned Titan Action.
+     */
+    payload?: any;
+
+    /**
+     * Alias for `payload`.
+     */
+    refreshPayload?: any;
+
+    /**
+     * Timeout in milliseconds for the spawned background task.
+     * @default 30000 (30 seconds)
+     */
+    timeout?: number;
   }
 
   /**
@@ -100,6 +149,13 @@ declare module "@t8n/cachex" {
     /**
      * Retrieves a value from the cache.
      * Automatically handles lazy expiration and updates eviction metadata.
+     * 
+     * **Lazy Loading**: If the server was restarted and the key is missing from memory, 
+     * it will automatically read the disk to load the data on the fly.
+     * 
+     * **SWR Pattern**: If `task` is configured and the data is older than the `delay` threshold,
+     * this method automatically spawns the background refresh task before returning the data.
+     * 
      * @param key The unique identifier for the entry.
      * @returns The stored value or null if not found or expired.
      */
@@ -215,6 +271,24 @@ declare module "@t8n/cachex" {
     flushExpired(): number;
 
     /**
+     * Manually hydrates the memory cache from the disk storage.
+     * Automatically called on initialization if persistence is enabled.
+     */
+    loadStorage(): void;
+
+    /**
+     * Rewrites all current memory entries to disk.
+     * Useful for recovering from an out-of-sync disk state.
+     * @returns Number of keys rebased.
+     */
+    rebase(): number;
+
+    /**
+     * Wipes the persistent disk storage completely.
+     */
+    flushStorage(): void;
+
+    /**
      * Returns operational statistics for the engine.
      */
     stats(): {
@@ -230,7 +304,9 @@ declare module "@t8n/cachex" {
 
     /**
      * Stale-While-Revalidate pattern helper.
-     * Returns cached data instantly if available. If missing, calls the fetcher.
+     * 1. Returns cached data instantly if available. 
+     * 2. If the data age exceeds `delay`, spawns `task` in the background seamlessly.
+     * 3. If completely missing, calls the fetcher synchronously to hydrate the cache.
      * @param key The unique identifier for the entry.
      * @param fetcher A function that returns fresh data.
      * @param options Cache options and background refresh toggle.
@@ -259,4 +335,14 @@ declare module "@t8n/cachex" {
    */
   const defaultCache: CacheX;
   export default defaultCache;
+
+  /**
+   * CLI Action: Rebase disk storage.
+   */
+  export function rebaseAction(req: any): any;
+
+  /**
+   * CLI Action: Flush disk storage.
+   */
+  export function flushStorageAction(req: any): any;
 }

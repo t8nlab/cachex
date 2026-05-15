@@ -6,7 +6,7 @@ import cachex from "@t8n/cachex";
  */
 export default function refresh(req) {
     const { key } = req.body;
-    log(`[BG] Refreshing cache key: ${key}`);
+    log(`[BG] Refreshing cache key: ${key} (Executed at: ${new Date().toISOString()})`);
     
     // Simulate fetching new data
     const newData = {
